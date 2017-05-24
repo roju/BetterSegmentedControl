@@ -45,9 +45,10 @@ class ViewController: UIViewController {
         // Control 2: Exclusively defined in IB
         
         // Control 3: Many options & error handling
-        control3.titles = ["One","Two","Three","Four","Five","Six"]
+        control3.titles = [String](repeating: "", count: 20) //["One","Two","Three","Four","Five","Six"]
         control3.titleFont = UIFont(name: "HelveticaNeue-Light", size: 14.0)!
         control3.selectedTitleFont = UIFont(name: "HelveticaNeue-Medium", size: 14.0)!
+        control3.isSliderControl = true
         do {
             try control3.setIndex(10, animated: false)
         }
@@ -57,7 +58,7 @@ class ViewController: UIViewController {
         catch {
             print("An error occured")
         }
-        try! control3.setIndex(2, animated: false)
+        try! control3.setIndex(0, animated: false)
         
         // Control 4: Added as a subview
         let viewSegmentedControl = BetterSegmentedControl(

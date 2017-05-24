@@ -107,6 +107,16 @@ import UIKit
             setNeedsLayout()
         }
     }
+  
+  public var segmentLabels: [UILabel] {
+    get {
+      return titleLabelsView.subviews as! [UILabel]
+    }
+    set {
+      setNeedsLayout()
+    }
+  }
+  
     /// Whether the indicator should bounce when selecting a new index. Defaults to true
     public var bouncesOnChange = true
     /// Whether the the control should always send the .ValueChanged event, regardless of the index remaining unchanged after interaction. Defaults to false
@@ -116,6 +126,9 @@ import UIKit
     /// Whether the the control should ignore pan gestures. Defaults to false
     public var panningDisabled = false
     /// The control's and indicator's corner radii
+  
+    public var isSliderControl = false
+  
     @IBInspectable public var cornerRadius: CGFloat {
         get {
             return layer.cornerRadius
@@ -225,6 +238,7 @@ import UIKit
         selectedTitleColor = Color.selectedTitle
         super.init(coder: aDecoder)
         titles = defaultTitles
+      
         finishInit()
     }
     public init(frame: CGRect,
@@ -291,7 +305,11 @@ import UIKit
         indicatorView.frame = elementFrame(forIndex: index)
         
         for index in 0...titleLabelsCount-1 {
-            let frame = elementFrame(forIndex: UInt(index))
+            var frame = elementFrame(forIndex: UInt(index))
+          
+            frame.origin.x += 1
+            frame.size.width -= 2
+          
             titleLabelsView.subviews[index].frame = frame
             selectedTitleLabelsView.subviews[index].frame = frame
         }
@@ -374,6 +392,7 @@ import UIKit
     @objc fileprivate func tapped(_ gestureRecognizer: UITapGestureRecognizer!) {
         let location = gestureRecognizer.location(in: self)
         try! setIndex(nearestIndex(toPoint: location))
+      if isSliderControl { updateProgress() }
     }
     @objc fileprivate func panned(_ gestureRecognizer: UIPanGestureRecognizer!) {
         guard !panningDisabled else {
@@ -383,23 +402,52 @@ import UIKit
         switch gestureRecognizer.state {
         case .began:
             initialIndicatorViewFrame = indicatorView.frame
+          
+            // move indicatorView frame center to touch point if touch began outside indicatorView frame
+            if !indicatorView.frame.contains(gestureRecognizer.location(in: self)){
+              initialIndicatorViewFrame!.origin.x = gestureRecognizer.location(in: self).x - initialIndicatorViewFrame!.size.width / 2
+            }
+          
         case .changed:
             var frame = initialIndicatorViewFrame!
+            
             frame.origin.x += gestureRecognizer.translation(in: self).x
             frame.origin.x = max(min(frame.origin.x, bounds.width - indicatorViewInset - frame.width), indicatorViewInset)
+            
             indicatorView.frame = frame
+          
+            if isSliderControl { updateProgress() }
+          
         case .ended, .failed, .cancelled:
             try! setIndex(nearestIndex(toPoint: indicatorView.center))
         default: break
         }
     }
+  
+  fileprivate func updateProgress() {
+    for (index, label) in self.segmentLabels.enumerated() {
+      if index <= Int(nearestIndex(toPoint: indicatorView.frame.origin)) {
+        label.backgroundColor = self.selectedTitleColor
+      }
+      else {
+        label.backgroundColor = self.backgroundColor
+      }
+    }
+  }
 }
 
 // MARK: - UIGestureRecognizerDelegate
 extension BetterSegmentedControl: UIGestureRecognizerDelegate {
     override open func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
         if gestureRecognizer == panGestureRecognizer {
-            return indicatorView.frame.contains(gestureRecognizer.location(in: self))
+          
+          // increase frame where pan gesture will begin, easier to grab the tiny handle
+          let newWidth:CGFloat = 30
+            var newOrigin = indicatorView.frame.origin
+            newOrigin.x -= newWidth
+            let largeFrame = CGRect.init(origin: newOrigin, size: CGSize.init(width: newWidth * 2 + indicatorView.frame.width, height: indicatorView.frame.height))
+          return largeFrame.contains(gestureRecognizer.location(in: self))
+          //return indicatorView.frame.contains(gestureRecognizer.location(in: self))
         }
         return super.gestureRecognizerShouldBegin(gestureRecognizer)
     }
