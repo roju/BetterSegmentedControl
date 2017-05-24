@@ -72,6 +72,7 @@ let control = BetterSegmentedControl(
 control.titleFont = UIFont(name: "HelveticaNeue", size: 14.0)!
 control.selectedTitleFont = UIFont(name: "HelveticaNeue-Medium", size: 14.0)!
 control.addTarget(self, action: #selector(ViewController.controlValueChanged(_:)), for: .valueChanged)
+control.isSliderControl = false
 view.addSubview(control)
 ```
 You can find different ways of using it (such as by designing it in a Storyboard file) in the example project. To run the example project, clone the repo, and run `pod install` from the Example directory first.
